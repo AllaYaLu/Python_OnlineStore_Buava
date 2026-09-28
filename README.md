@@ -1,0 +1,6 @@
+# Python_OnlineStore_Buava
+
+Проект: Сайт интернет-магазина
+Имя Фамилия: Буава Алла
+Логин на GitHub: AllaYaLu
+E-mail для связи: 249898081+AllaYaLu@://github.com
