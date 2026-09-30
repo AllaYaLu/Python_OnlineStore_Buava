@@ -3,16 +3,16 @@ from .models import Product, CartItem, Client, Order
 from .forms import CartForm
 
 def product_list(request):
-    # Извлекаем вообще все товары из нашей базы данных PostgreSQL
+    # Извлекаем вообще все товары из базы данных PostgreSQL
     products = Product.objects.all()
     
-    # Кладывём их в словарь-контекст, чтобы HTML-шаблон их увидел
+    # Кладём их в словарь-контекст, чтобы HTML-шаблон их увидел
     context = {'products': products}
     
     # Отправляем пользователя на страницу со списком товаров
     return render(request, 'store/product_list.html', context)
 
-# НАША НОВАЯ ФУНКЦИЯ ДЛЯ ОДНОГО ТОВАРА:
+# НОВАЯ ФУНКЦИЯ ДЛЯ ОДНОГО ТОВАРА:
 def product_detail(request, pk):
     # Ищет товар по его первичному ключу (ID). Если не находит — выдает ошибку 404.
     product = get_object_or_404(Product, pk=pk)
@@ -63,7 +63,7 @@ def add_to_cart(request):
 
 
 def cart_detail(request):
-    # Как и в прошлом шаге, берем нашего тестового клиента
+    # Как и в прошлом шаге, берем тестового клиента
     client = Client.objects.filter(email="test_buyer@mail.ru").first()
     
     cart_items = []
@@ -86,7 +86,7 @@ def cart_detail(request):
 
 
 def create_order(request):
-    # Берем нашего тестового клиента
+    # Берем тестового клиента
     client = Client.objects.filter(email="test_buyer@mail.ru").first()
     
     if not client:

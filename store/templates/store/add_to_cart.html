@@ -74,10 +74,9 @@
         <h2>Добавить товар в корзину</h2>
         
         <form method="POST" action="">
-            <!-- Защитный токен Django — без него форма вернет ошибку 403 -->
+
             {% csrf_token %}
             
-            <!-- Красиво выводим каждое поле формы по отдельности -->
             {% for field in form %}
                 <div class="form-group">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>

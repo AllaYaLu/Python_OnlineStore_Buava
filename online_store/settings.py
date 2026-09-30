@@ -125,10 +125,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = "static/"
 
-# URL-адрес, по которому картинки будут доступны в браузере (например, /media/products/photo.jpg)
+
 MEDIA_URL = '/media/'
 
-# Физический путь на твоем компьютере, куда Django будет складывать загруженные файлы
+
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Email

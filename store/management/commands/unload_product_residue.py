@@ -8,8 +8,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING('Запуск экспорта остатков...'))
         try:
-            # Нам нужно выгрузить только модель Stock из приложения store
-            # Результат мы запишем в файл residue.json (или data.json по заданию)
+            # Нужно выгрузить только модель Stock из приложения store
             with open('residue.json', 'w', encoding='utf-8') as f:
                 call_command('dumpdata', 'store.Stock', stdout=f, indent=4)
                 
