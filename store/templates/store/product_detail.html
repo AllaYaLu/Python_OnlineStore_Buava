@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ product.title }} — Интернет-магазин</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }
+        .product-container { display: flex; gap: 40px; }
+        .product-info { max-width: 500px; }
+        .price { font-size: 24px; color: green; font-weight: bold; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <!-- Ссылка для возврата назад на витрину -->
+    <a href="/products/" class="back-link">&larr; Вернуться в каталог</a>
+
+    <div class="product-container">
+        {% if product.image %}
+            <div>
+                <img src="{{ product.image.url }}" alt="{{ product.title }}" style="max-width: 300px; border-radius: 8px;">
+            </div>
+        {% endif %}
+
+        <div class="product-info">
+            <!-- Обрати внимание: у нас в модели поле называется title, а не name -->
+            <h1>{{ product.title }}</h1> 
+            
+            {% if product.category %}
+                <p><strong>Категория:</strong> {{ product.category.name }}</p>
+            {% endif %}
+
+            <p class="price">{{ product.price }} руб.</p>
+            
+            <h3>Описание товара:</h3>
+            <p>{{ product.description|default:"Описание для данного товара пока не добавлено." }}</p>
+        </div>
+    </div>
+
+</body>
+</html>

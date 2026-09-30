@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказ успешно оформлен!</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 40px; text-align: center; color: #333; }
+        .success-container { max-width: 500px; background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin: 50px auto; }
+        h1 { color: #28a745; }
+        .order-number { font-size: 20px; font-weight: bold; margin: 20px 0; color: #2c3e50; }
+        .back-link { display: inline-block; margin-top: 25px; color: #007bff; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="success-container">
+        <div style="font-size: 60px; color: #28a745;">✓</div>
+        <h1>Спасибо за заказ!</h1>
+        <p>Ваша заявка успешно принята в обработку.</p>
+        
+        <!-- Выводим сгенерированный базой данных ID заказа -->
+        <div class="order-number">Номер вашего заказа: #{{ order.id }}</div>
+        <p>Сумма к оплате: <strong>{{ order.total_amount }} руб.</strong></p>
+        
+        <a href="/products/" class="back-link">&larr; Вернуться в каталог товаров</a>
+    </div>
+
+</body>
+</html>

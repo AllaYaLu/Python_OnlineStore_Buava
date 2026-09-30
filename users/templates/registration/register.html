@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация на сайте</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 40px; color: #333; }
+        .register-container { max-width: 400px; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin: 50px auto; }
+        h2 { text-align: center; color: #2c3e50; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-register { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-register:hover { background-color: #0056b3; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #6c757d; text-decoration: none; }
+        /* Небольшое исправление стандартных подсказок Django */
+        .helptext { display: block; font-size: 12px; color: #6c757d; margin-top: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        <h2>Регистрация аккаунта</h2>
+        
+        <form method="POST" action="">
+            {% csrf_token %}
+            
+            <!-- Выводим встроенные поля регистрации Django (Логин, Пароль, Повтор пароля) -->
+            {{ form.as_p }}
+            
+            <button type="submit" class="btn-register">Зарегистрироваться</button>
+        </form>
+
+        <a href="/products/" class="back-link">&larr; Вернуться в каталог</a>
+    </div>
+
+</body>
+</html>

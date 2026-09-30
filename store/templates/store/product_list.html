@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Витрина интернет-магазина</title>
+    <style>
+        /* Небольшие стили, чтобы товары выглядели как карточки */
+        .product-grid { display: flex; gap: 20px; flex-wrap: wrap; font-family: Arial, sans-serif; }
+        .product-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 200px; }
+        .price { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Каталог товаров нашего магазина</h1>
+
+    <div class="product-grid">
+        {% for product in products %}
+            <div class="product-card">
+                <h3><a href="/products/{{ product.id }}/">{{ product.title }}</a></h3>
+                <p>{{ product.description|default:"Описание отсутствует" }}</p>
+                <p class="price">{{ product.price }} руб.</p>
+                
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.title }}" style="max-width: 100%;">
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>Товаров в магазине пока нет. Добавьте их через админку!</p>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
