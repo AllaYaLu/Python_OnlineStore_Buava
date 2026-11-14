@@ -23,7 +23,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # 7. Создаем непривилегированного пользователя для безопасности (важно для продакшена)
-RUN adduser --disabled-password --gecos "" appuser && \
+RUN mkdir -p /app/media /app/staticfiles && \
+    adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
 USER appuser
 

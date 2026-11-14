@@ -1,17 +1,33 @@
 from django.contrib import admin
-from .models import Category, Client, Product, Stock, CartItem, Order
+from django.utils.html import format_html
 
-# 1. Простая регистрация моделей
-admin.site.register(Category)
+from .models import CartItem, Category, Client, Order, Product, Stock
+
 admin.site.register(Client)
 admin.site.register(CartItem)
 
-# 2. Продвинутая регистрация для товаров (чтобы видеть цену и категорию списком)
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    list_display_links = ("id",)
+    list_editable = ("name",)
+    search_fields = ("name",)
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'price', 'category') # Какие колонки показывать в таблице
-    list_filter = ('category',)                         # Фильтр справа
-    search_fields = ('title', 'description')            # Строка поиска по названию
+    list_display = ("id", "image_preview", "title", "price", "category")
+    list_display_links = ("id", "title")
+    list_filter = ("category",)
+    search_fields = ("title", "description")
+
+    @admin.display(description="Фото")
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height: 50px; border-radius: 6px;" />', obj.image.url)
+        return "Нет фото"
+
 
 # 3. Продвинутая регистрация для склада
 @admin.register(Stock)
@@ -24,3 +40,6 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'client', 'total_amount', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     list_editable = ('status',) # Позволяет менять статус заказа прямо из общего списка!
+
+    
+    

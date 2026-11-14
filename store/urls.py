@@ -1,6 +1,8 @@
 from django.urls import path
-from . import views
+
 from users.views import register
+
+from . import views
 
 urlpatterns = [
     # Главная страница приложения store будет открывать наш список товаров
