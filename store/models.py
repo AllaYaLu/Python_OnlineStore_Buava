@@ -1,10 +1,27 @@
 import os
+from decimal import Decimal
 from io import BytesIO
 
+from colorfield.fields import ColorField
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.core.validators import MinValueValidator
 from django.db import models
 from PIL import Image
 
+
+class Badge(models.Model):
+    name = models.CharField(max_length=50, unique=True, verbose_name="Название бейджа")
+    color = ColorField(default="#FF5722", verbose_name="Цвет фона бейджа")
+    text_color = ColorField(default="#FFFFFF", verbose_name="Цвет текста")
+
+    class Meta:
+        verbose_name = "Бейдж"
+        verbose_name_plural = "Бейджи"
+
+    def __str__(self):
+        return self.name
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name="Название категории")
@@ -36,9 +53,30 @@ class Client(models.Model):
 
 # 2. ТАБЛИЦА ТОВАРОВ
 class Product(models.Model):
+    DEAL_TYPE_CHOICES = [
+        ('sale', 'Только продажа'),
+        ('rent', 'Только аренда'),
+        ('both', 'Продажа и аренда'),
+    ]
+
+    badge = models.ForeignKey(
+        Badge, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Бейдж"
+    )
+
     title = models.CharField(max_length=255, verbose_name="Название товара")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True,
+        validators=[MinValueValidator(Decimal('0.01'))], verbose_name="Цена покупки"
+    )
+    rent_price = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True,
+        validators=[MinValueValidator(Decimal('0.01'))], verbose_name="Цена аренды (за сутки)"
+    )
+    deal_type = models.CharField(
+        max_length=10, choices=DEAL_TYPE_CHOICES, default='sale', verbose_name="Тип предложения"
+    )
+    
     image = models.ImageField(upload_to="products/", blank=True, null=True, verbose_name="Изображение товара")
     category = models.ForeignKey(Category, on_delete=models.PROTECT, blank=True, null=True, verbose_name="Категория")
 
@@ -49,6 +87,11 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def in_stock(self):
+        """Удобное свойство для шаблонов: возвращает True, если товар есть на складе."""
+        return hasattr(self, 'stock') and self.stock.quantity > 0
+
     def save(self, *args, **kwargs):
         if self.image:
             file_root, ext = os.path.splitext(self.image.name)
@@ -56,14 +99,32 @@ class Product(models.Model):
                 img = Image.open(self.image)
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
-
                 buffer = BytesIO()
                 img.save(buffer, format="JPEG", quality=85)
-
                 new_name = f"{os.path.basename(file_root)}.jpg"
                 self.image.save(new_name, ContentFile(buffer.getvalue()), save=False)
-
         super().save(*args, **kwargs)
+        
+    def clean(self):
+        super().clean()
+        if self.deal_type == 'sale':
+            if not self.price:
+                raise ValidationError({'price': 'Для типа «Только продажа» необходимо указать цену покупки.'})
+            self.rent_price = None  # Очищаем лишнюю цену аренды, если случайно ввели
+
+        elif self.deal_type == 'rent':
+            if not self.rent_price:
+                raise ValidationError({'rent_price': 'Для типа «Только аренда» необходимо указать цену аренды.'})
+            self.price = None  # Очищаем лишнюю цену покупки
+
+        elif self.deal_type == 'both':
+            errors = {}
+            if not self.price:
+                errors['price'] = 'Укажите цену покупки.'
+            if not self.rent_price:
+                errors['rent_price'] = 'Укажите цену аренды.'
+            if errors:
+                raise ValidationError(errors)
 
 
 # 3. ТАБЛИЦА ЗАПАСОВ НА СКЛАДЕ
@@ -81,18 +142,20 @@ class Stock(models.Model):
 
 # 4. ТАБЛИЦА КОРЗИНЫ
 class CartItem(models.Model):
+    DEAL_CHOICES = [
+        ("sale", "Покупка"),
+        ("rent", "Аренда"),
+    ]
     client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Клиент")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Товар")
+    deal_type = models.CharField(max_length=10, choices=DEAL_CHOICES, default="sale", verbose_name="Тип сделки")
     quantity = models.PositiveIntegerField(default=1, verbose_name="Количество")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
 
     class Meta:
         verbose_name = "Товар в корзине"
         verbose_name_plural = "Товары в корзине"
-        unique_together = ('client', 'product')
-
-    def __str__(self):
-        return f"{self.product.title} в корзине {self.client.first_name}"
+        unique_together = ("client", "product", "deal_type")
 
 
 # 5. ТАБЛИЦА ЗАКАЗОВ
@@ -115,3 +178,21 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Заказ №{self.id} от {self.created_at.strftime('%d.%m.%Y')}"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites", verbose_name="Пользователь"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="favorited_by", verbose_name="Товар"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
+
+    class Meta:
+        verbose_name = "Избранное"
+        verbose_name_plural = "Избранное"
+        unique_together = ("user", "product")
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.product.title}"

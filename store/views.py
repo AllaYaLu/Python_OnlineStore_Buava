@@ -1,118 +1,211 @@
-from django.shortcuts import render, get_object_or_404, redirect 
-from .models import Product, CartItem, Client, Order  
-from .forms import CartForm
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
 
-def product_list(request):
-    # Извлекаем вообще все товары из базы данных PostgreSQL
-    products = Product.objects.all()
-    
-    # Кладём их в словарь-контекст, чтобы HTML-шаблон их увидел
-    context = {'products': products}
-    
-    # Отправляем пользователя на страницу со списком товаров
-    return render(request, 'store/product_list.html', context)
-
-# НОВАЯ ФУНКЦИЯ ДЛЯ ОДНОГО ТОВАРА:
-def product_detail(request, pk):
-    # Ищет товар по его первичному ключу (ID). Если не находит — выдает ошибку 404.
-    product = get_object_or_404(Product, pk=pk)
-    
-    context = {'product': product}
-    return render(request, 'store/product_detail.html', context)
+from .models import CartItem, Category, Client, Favorite, Order, Product
 
 
-
-def add_to_cart(request):
-    if request.method == 'POST':
-        form = CartForm(request.POST)
-        if form.is_valid():
-            product = form.cleaned_data['product']
-            quantity = form.cleaned_data['quantity']
-            
-            # Для учебного теста берём первого клиента из таблицы clients.
-            # Если клиентов ещё нет, создадим тестового, чтобы сайт не падал.
-            client, created = Client.objects.get_or_create(
-                email="test_buyer@mail.ru",
-                defaults={
-                    "first_name": "Иван",
-                    "last_name": "Тестовый",
-                    "phone": "+79991112233",
-                    "address": "Москва, ул. Ленина, д. 1"
-                }
-            )
-            
-            # Ищем, нет ли уже этого товара в корзине данного клиента
-            cart_item, item_created = CartItem.objects.get_or_create(
-                client=client,
-                product=product,
-                defaults={'quantity': quantity}
-            )
-            
-            # Если товар уже был в корзине, просто увеличиваем его количество
-            if not item_created:
-                cart_item.quantity += quantity
-                cart_item.save()
-                
-            # Перенаправляем пользователя (пока на ту же страницу или на список товаров)
-            return redirect('product_list')
-    else:
-        form = CartForm()
-        
-    return render(request, 'store/add_to_cart.html', {'form': form})
+def _get_or_create_client(user):
+    """Вспомогательная функция: связывает авторизованного User с карточкой Client."""
+    client, _ = Client.objects.get_or_create(
+        email=user.email or f"{user.username}@example.com",
+        defaults={
+            "first_name": user.first_name or user.username,
+            "last_name": user.last_name or "",
+            "patronymic": getattr(user, "patronymic", "") or "",
+            "phone": getattr(user, "phone", "") or f"user_{user.id}",
+            "address": getattr(user, "address", "") or "Не указан",
+        },
+    )
+    return client
 
 
-
-def cart_detail(request):
-    # Как и в прошлом шаге, берем тестового клиента
-    client = Client.objects.filter(email="test_buyer@mail.ru").first()
-    
-    cart_items = []
-    total_price = 0
-    
-    if client:
-        # Извлекаем все товары из корзины этого клиента
-        cart_items = CartItem.objects.filter(client=client).select_related('product')
-        
-        # Считаем стоимость для каждого товара и общую сумму корзины
-        for item in cart_items:
-            item.item_total = item.product.price * item.quantity
-            total_price += item.item_total
+def home(request):
+    """Главная страница: компактные карточки БЕЗ длинного описания."""
+    products = Product.objects.select_related("category", "badge", "stock").order_by("-id")[:8]
+    categories = Category.objects.all()
+    favorite_ids = (
+        list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
+        if request.user.is_authenticated
+        else []
+    )
+    compare_ids = request.session.get("compare_ids", [])
 
     context = {
-        'cart_items': cart_items,
-        'total_price': total_price
+        "products": products,
+        "categories": categories,
+        "favorite_ids": favorite_ids,
+        "compare_ids": compare_ids,
     }
-    return render(request, 'store/cart_detail.html', context)
+    return render(request, "store/home.html", context)
 
 
-def create_order(request):
-    # Берем тестового клиента
-    client = Client.objects.filter(email="test_buyer@mail.ru").first()
-    
-    if not client:
-        return redirect('product_list')
-        
-    # Находим все товары в корзине этого клиента
-    cart_items = CartItem.objects.filter(client=client)
-    
-    if not cart_items.exists():
-        # Если корзина пуста, оформлять нечего — отправляем в каталог
-        return redirect('product_list')
-        
-    # Считаем итоговую сумму заказа
-    total_amount = 0
-    for item in cart_items:
-        total_amount += item.product.price * item.quantity
-        
-    # 1. Создаем новую запись в таблице заказов
-    order = Order.objects.create(
-        client=client,
-        total_amount=total_amount,
-        status='new' # Статус по умолчанию "Новый"
+def product_list(request):
+    """Страница Каталог: карточки С описанием, фильтрами по категориям, типу сделки и поиском."""
+    products = Product.objects.select_related("category", "badge", "stock").all()
+    categories = Category.objects.all()
+
+    category_id = request.GET.get("category")
+    if category_id and category_id.isdigit():
+        products = products.filter(category_id=int(category_id))
+
+    deal_type = request.GET.get("deal")
+    if deal_type in ("sale", "rent"):
+        products = products.filter(Q(deal_type=deal_type) | Q(deal_type="both"))
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        products = products.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query))
+
+    sort_by = request.GET.get("sort", "")
+    if sort_by == "price_asc":
+        products = products.order_by("price", "rent_price")
+    elif sort_by == "price_desc":
+        products = products.order_by("-price", "-rent_price")
+    else:
+        products = products.order_by("-id")
+
+    favorite_ids = (
+        list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
+        if request.user.is_authenticated
+        else []
     )
-    
-    # 2. Очищаем корзину клиента (удаляем элементы из таблицы CartItem)
-    cart_items.delete()
-    
-    # Передаем номер заказа на страницу успешного оформления
-    return render(request, 'store/order_success.html', {'order': order})
+    compare_ids = request.session.get("compare_ids", [])
+
+    context = {
+        "products": products,
+        "categories": categories,
+        "selected_category": int(category_id) if category_id and category_id.isdigit() else None,
+        "selected_deal": deal_type,
+        "search_query": search_query,
+        "sort_by": sort_by,
+        "favorite_ids": favorite_ids,
+        "compare_ids": compare_ids,
+    }
+    return render(request, "store/product_list.html", context)
+
+
+def product_detail(request, pk):
+    product = get_object_or_404(Product.objects.select_related("category", "badge", "stock"), pk=pk)
+    is_favorite = (
+        Favorite.objects.filter(user=request.user, product=product).exists()
+        if request.user.is_authenticated
+        else False
+    )
+    is_compared = product.id in request.session.get("compare_ids", [])
+    return render(
+        request,
+        "store/product_detail.html",
+        {"product": product, "is_favorite": is_favorite, "is_compared": is_compared},
+    )
+
+
+@login_required
+def toggle_favorite(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    fav, created = Favorite.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        fav.delete()
+    return redirect(request.META.get("HTTP_REFERER", "product_list"))
+
+
+@login_required
+def favorite_list(request):
+    favorites = Favorite.objects.filter(user=request.user).select_related("product", "product__badge", "product__stock")
+    products = [f.product for f in favorites]
+    return render(request, "store/favorites.html", {"products": products})
+
+
+def toggle_compare(request, product_id):
+    get_object_or_404(Product, id=product_id)
+    compare_ids = request.session.get("compare_ids", [])
+    if product_id in compare_ids:
+        compare_ids.remove(product_id)
+    else:
+        if len(compare_ids) < 4:  # Ограничим сравнение до 4 игр
+            compare_ids.append(product_id)
+    request.session["compare_ids"] = compare_ids
+    return redirect(request.META.get("HTTP_REFERER", "product_list"))
+
+
+def compare_list(request):
+    compare_ids = request.session.get("compare_ids", [])
+    products = Product.objects.filter(id__in=compare_ids).select_related("category", "badge", "stock")
+    return render(request, "store/compare.html", {"products": products})
+
+
+@login_required
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if not product.in_stock:
+        return redirect(request.META.get("HTTP_REFERER", "product_list"))
+
+    deal_type = request.POST.get("deal_type", "sale")
+    client = _get_or_create_client(request.user)
+    cart_item, created = CartItem.objects.get_or_create(client=client, product=product, deal_type=deal_type)
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
+    return redirect("cart_detail")
+
+
+@never_cache
+@login_required
+def cart_detail(request):
+    client = _get_or_create_client(request.user)
+    items = CartItem.objects.filter(client=client).select_related("product", "product__stock").order_by("id")
+    total_price = 0
+    for item in items:
+        unit_price = item.product.rent_price if item.deal_type == "rent" else item.product.price
+        item.subtotal = (unit_price or 0) * item.quantity
+        total_price += item.subtotal
+    return render(request, "store/cart_detail.html", {"items": items, "total_price": total_price})
+
+
+@login_required
+def update_cart_item(request, item_id, action):
+    client = _get_or_create_client(request.user)
+    item = get_object_or_404(CartItem, id=item_id, client=client)
+
+    if action == "increase":
+        # Проверяем, хватает ли товара на складе
+        max_stock = item.product.stock.quantity if hasattr(item.product, "stock") else 0
+        if item.quantity < max_stock:
+            item.quantity += 1
+            item.save()
+    elif action == "decrease":
+        if item.quantity > 1:
+            item.quantity -= 1
+            item.save()
+        else:
+            item.delete()
+
+    return redirect("cart_detail")
+
+
+@login_required
+def remove_cart_item(request, item_id):
+    client = _get_or_create_client(request.user)
+    item = get_object_or_404(CartItem, id=item_id, client=client)
+    item.delete()
+    return redirect("cart_detail")
+
+
+@login_required
+def create_order(request):
+    client = _get_or_create_client(request.user)
+    items = CartItem.objects.filter(client=client).select_related("product", "product__stock")
+    if items.exists():
+        total_price = sum(
+            ((item.product.rent_price if item.deal_type == "rent" else item.product.price) or 0) * item.quantity
+            for item in items
+        )
+        order = Order.objects.create(client=client, total_amount=total_price)
+        for item in items:
+            if hasattr(item.product, "stock"):
+                item.product.stock.quantity = max(0, item.product.stock.quantity - item.quantity)
+                item.product.stock.save()
+        items.delete()
+        return render(request, "store/order_success.html", {"order": order})
+    return redirect("product_list")

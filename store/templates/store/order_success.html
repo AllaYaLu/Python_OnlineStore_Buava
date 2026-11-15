@@ -22,7 +22,7 @@
         <div class="order-number">Номер вашего заказа: #{{ order.id }}</div>
         <p>Сумма к оплате: <strong>{{ order.total_amount }} руб.</strong></p>
         
-        <a href="/products/" class="back-link">&larr; Вернуться в каталог товаров</a>
+        <a href="{% url 'product_list' %}" class="back-link">&larr; Вернуться в каталог товаров</a>
     </div>
 
 </body>

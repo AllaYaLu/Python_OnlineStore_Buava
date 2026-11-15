@@ -29,6 +29,7 @@ services:
                python manage.py collectstatic --no-input &&
                gunicorn online_store.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2"
     volumes:
+      - .:/app
       - media_volume:/app/media
     ports:
       - "8000:8000"

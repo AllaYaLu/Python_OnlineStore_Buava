@@ -18,44 +18,68 @@
 </head>
 <body>
 
-    <div class="cart-container">
-        <h1>Ваша корзина</h1>
+    {% extends 'store/base.html' %}
 
-        {% if cart_items %}
-            <table>
+    {% block title %}Корзина — Buava Store{% endblock %}
+    
+    {% block content %}
+    <section class="section">
+        <h1>Ваша корзина</h1>
+    
+        {% if items %}
+            <table class="cart-table">
                 <thead>
                     <tr>
                         <th>Товар</th>
-                        <th>Цена</th>
+                        <th>Формат</th>
                         <th>Количество</th>
                         <th>Сумма</th>
+                        <th>Действие</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in cart_items %}
+                    {% for item in items %}
                         <tr>
-                            <td><strong>{{ item.product.title }}</strong></td>
-                            <td>{{ item.product.price }} руб.</td>
-                            <td>{{ item.quantity }} шт.</td>
-                            <td>{{ item.item_total }} руб.</td>
+                            <td>
+                                <a href="{% url 'product_detail' item.product.id %}">{{ item.product.title }}</a>
+                            </td>
+                            <td>
+                                {% if item.deal_type == 'rent' %}
+                                    Аренда ({{ item.product.rent_price }} ₽/сут)
+                                {% else %}
+                                    Покупка ({{ item.product.price }} ₽)
+                                {% endif %}
+                            </td>
+                            <td class="quantity-controls">
+                                <a href="{% url 'update_cart_item' item.id 'decrease' %}" class="qty-btn">−</a>
+                                <span class="qty-value">{{ item.quantity }} шт.</span>
+                                <a href="{% url 'update_cart_item' item.id 'increase' %}" class="qty-btn">+</a>
+                            </td>
+                            <td><strong>{{ item.subtotal }} ₽</strong></td>
+                            <td>
+                                <a href="{% url 'remove_cart_item' item.id %}" class="remove-btn" title="Удалить из корзины">Удалить</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-
-            <div class="total-section">
-                Итого к оплате: <span style="color: green;">{{ total_price }} руб.</span>
+    
+            <div class="cart-summary">
+                <h3>Итого к оплате: {{ total_price }} ₽</h3>
+                <form action="{% url 'create_order' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--primary">Оформить заказ</button>
+                </form>
             </div>
-            
-            <!-- Заготовка ссылки для перехода к оформлению заказа -->
-            <a href="/cart/order/" class="btn-order">Оформить заказ</a>
         {% else %}
-            <p style="font-size: 18px; color: #777;">Ваша корзина пока пуста. Самое время добавить в неё что-нибудь!</p>
+            <p>Ваша корзина пока пуста.</p>
         {% endif %}
-
-        <div style="clear: both;"></div>
-        <a href="/products/" class="back-link">&larr; Вернуться в каталог товаров</a>
-    </div>
-
+    
+        <p style="margin-top: 20px;">
+            <a href="{% url 'product_list' %}">&larr; Вернуться в каталог товаров</a>
+        </p>
+    </section>
+    {% endblock %}
+    
 </body>
 </html>

@@ -1,34 +1,48 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Витрина интернет-магазина</title>
-    <style>
-        /* Небольшие стили, чтобы товары выглядели как карточки */
-        .product-grid { display: flex; gap: 20px; flex-wrap: wrap; font-family: Arial, sans-serif; }
-        .product-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 200px; }
-        .price { color: green; font-weight: bold; }
-    </style>
-</head>
-<body>
+{% extends 'store/base.html' %}
 
-    <h1>Каталог товаров нашего магазина</h1>
+{% block title %}Каталог игр — Buava Store{% endblock %}
 
-    <div class="product-grid">
-        {% for product in products %}
-            <div class="product-card">
-                <h3><a href="/products/{{ product.id }}/">{{ product.title }}</a></h3>
-                <p>{{ product.description|default:"Описание отсутствует" }}</p>
-                <p class="price">{{ product.price }} руб.</p>
-                
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.title }}" style="max-width: 100%;">
-                {% endif %}
+{% block content %}
+<div class="catalog-layout">
+    <!-- Боковая панель фильтров -->
+    <aside class="catalog-sidebar">
+        <h3>Категории</h3>
+        <ul class="filter-list">
+            <li><a href="{% url 'product_list' %}" class="{% if not selected_category %}active{% endif %}">Все категории</a></li>
+            {% for cat in categories %}
+                <li>
+                    <a href="?category={{ cat.id }}" class="{% if selected_category == cat.id %}active{% endif %}">
+                        {{ cat.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <h3>Формат</h3>
+        <ul class="filter-list">
+            <li><a href="?deal=sale" class="{% if selected_deal == 'sale' %}active{% endif %}">Можно купить</a></li>
+            <li><a href="?deal=rent" class="{% if selected_deal == 'rent' %}active{% endif %}">Можно арендовать</a></li>
+        </ul>
+    </aside>
+
+    <!-- Сетка товаров с описанием -->
+    <section class="catalog-main">
+        <div class="catalog-toolbar">
+            <h1>Каталог товаров</h1>
+            <div class="sort-links">
+                <span>Сортировка:</span>
+                <a href="?sort=price_asc">Сначала дешевле</a>
+                <a href="?sort=price_desc">Сначала дороже</a>
             </div>
-        {% empty %}
-            <p>Товаров в магазине пока нет. Добавьте их через админку!</p>
-        {% endfor %}
-    </div>
+        </div>
 
-</body>
-</html>
+        <div class="product-grid">
+            {% for product in products %}
+                {% include 'store/includes/product_card.html' with show_description=True %}
+            {% empty %}
+                <p>По вашему запросу ничего не найдено. <a href="{% url 'product_list' %}">Сбросить фильтры</a></p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

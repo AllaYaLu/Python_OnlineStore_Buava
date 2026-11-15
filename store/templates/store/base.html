@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Buava Store — Интернет-магазин{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <!-- Единая шапка сайта -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'home' %}" class="logo">Buava<span>Store</span></a>
+
+            <!-- Поиск по товарам -->
+            <form action="{% url 'product_list' %}" method="get" class="search-form">
+                <input type="text" name="q" placeholder="Найти товар..." value="{{ search_query|default:'' }}">
+                <button type="submit">Найти</button>
+            </form>
+
+            <!-- Навигация -->
+            <nav class="nav-links">
+                <a href="{% url 'product_list' %}">Каталог</a>
+                <a href="{% url 'compare_list' %}" class="cart-link">Сравнить</a>
+                <a href="{% url 'favorite_list' %}" class="cart-link">Избранное</a>
+                <a href="{% url 'cart_detail' %}" class="cart-link">Корзина</a>
+
+                {% if user.is_authenticated %}
+                    <a href="{% url 'profile' %}">Кабинет ({{ user.username }})</a>
+                    {% if user.is_staff %}
+                        <a href="/admin/" class="admin-badge">Админка</a>
+                    {% endif %}
+                    <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link">Выйти</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}">Войти</a>
+                    <a href="{% url 'register' %}" class="btn-primary-sm">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- Основной контент страницы -->
+    <main class="container main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Подвал сайта -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Buava Store. Все права защищены.</p>
+        </div>
+    </footer>
+</body>
+</html>
