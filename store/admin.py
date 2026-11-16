@@ -36,18 +36,30 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("id", "image_preview", "title", "price", "rent_price", "deal_type", "badge", "category")
+    list_display = (
+        "id",
+        "image_preview",
+        "title",
+        "price",
+        "rent_price",
+        "deal_type",
+        "badge",
+        "category",
+    )
     list_display_links = ("id", "title")
     list_editable = ("price", "rent_price", "deal_type", "badge")
     list_filter = ("category", "deal_type", "badge")
     search_fields = ("title", "description")
-    
+
     inlines = [StockInline]
 
     @admin.display(description="Фото")
     def image_preview(self, obj):
         if obj.image:
-            return format_html('<img src="{}" style="height: 50px; border-radius: 6px;" />', obj.image.url)
+            return format_html(
+                '<img src="{}" style="height: 50px; border-radius: 6px;" />',
+                obj.image.url,
+            )
         return "Нет фото"
 
 
@@ -66,4 +78,3 @@ class OrderAdmin(admin.ModelAdmin):
 
 admin.site.register(Client)
 admin.site.register(CartItem)
-

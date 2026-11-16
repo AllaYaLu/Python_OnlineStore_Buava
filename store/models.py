@@ -23,8 +23,11 @@ class Badge(models.Model):
     def __str__(self):
         return self.name
 
+
 class Category(models.Model):
-    name = models.CharField(max_length=255, unique=True, verbose_name="Название категории")
+    name = models.CharField(
+        max_length=255, unique=True, verbose_name="Название категории"
+    )
 
     class Meta:
         verbose_name = "Категория"
@@ -38,7 +41,9 @@ class Category(models.Model):
 class Client(models.Model):
     first_name = models.CharField(max_length=50, verbose_name="Имя")
     last_name = models.CharField(max_length=50, verbose_name="Фамилия")
-    patronymic = models.CharField(max_length=50, blank=True, null=True, verbose_name="Отчество")
+    patronymic = models.CharField(
+        max_length=50, blank=True, null=True, verbose_name="Отчество"
+    )
     email = models.EmailField(unique=True, verbose_name="Электронная почта")
     phone = models.CharField(max_length=20, unique=True, verbose_name="Номер телефона")
     address = models.TextField(verbose_name="Адрес доставки")
@@ -54,9 +59,9 @@ class Client(models.Model):
 # 2. ТАБЛИЦА ТОВАРОВ
 class Product(models.Model):
     DEAL_TYPE_CHOICES = [
-        ('sale', 'Только продажа'),
-        ('rent', 'Только аренда'),
-        ('both', 'Продажа и аренда'),
+        ("sale", "Только продажа"),
+        ("rent", "Только аренда"),
+        ("both", "Продажа и аренда"),
     ]
 
     badge = models.ForeignKey(
@@ -66,19 +71,38 @@ class Product(models.Model):
     title = models.CharField(max_length=255, verbose_name="Название товара")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
     price = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True,
-        validators=[MinValueValidator(Decimal('0.01'))], verbose_name="Цена покупки"
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal("0.01"))],
+        verbose_name="Цена покупки",
     )
     rent_price = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True,
-        validators=[MinValueValidator(Decimal('0.01'))], verbose_name="Цена аренды (за сутки)"
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal("0.01"))],
+        verbose_name="Цена аренды (за сутки)",
     )
     deal_type = models.CharField(
-        max_length=10, choices=DEAL_TYPE_CHOICES, default='sale', verbose_name="Тип предложения"
+        max_length=10,
+        choices=DEAL_TYPE_CHOICES,
+        default="sale",
+        verbose_name="Тип предложения",
     )
-    
-    image = models.ImageField(upload_to="products/", blank=True, null=True, verbose_name="Изображение товара")
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, blank=True, null=True, verbose_name="Категория")
+
+    image = models.ImageField(
+        upload_to="products/", blank=True, null=True, verbose_name="Изображение товара"
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        verbose_name="Категория",
+    )
 
     class Meta:
         verbose_name = "Товар"
@@ -90,7 +114,7 @@ class Product(models.Model):
     @property
     def in_stock(self):
         """Удобное свойство для шаблонов: возвращает True, если товар есть на складе."""
-        return hasattr(self, 'stock') and self.stock.quantity > 0
+        return hasattr(self, "stock") and self.stock.quantity > 0
 
     def save(self, *args, **kwargs):
         if self.image:
@@ -104,33 +128,45 @@ class Product(models.Model):
                 new_name = f"{os.path.basename(file_root)}.jpg"
                 self.image.save(new_name, ContentFile(buffer.getvalue()), save=False)
         super().save(*args, **kwargs)
-        
+
     def clean(self):
         super().clean()
-        if self.deal_type == 'sale':
+        if self.deal_type == "sale":
             if not self.price:
-                raise ValidationError({'price': 'Для типа «Только продажа» необходимо указать цену покупки.'})
+                raise ValidationError(
+                    {
+                        "price": "Для типа «Только продажа» необходимо указать цену покупки."
+                    }
+                )
             self.rent_price = None  # Очищаем лишнюю цену аренды, если случайно ввели
 
-        elif self.deal_type == 'rent':
+        elif self.deal_type == "rent":
             if not self.rent_price:
-                raise ValidationError({'rent_price': 'Для типа «Только аренда» необходимо указать цену аренды.'})
+                raise ValidationError(
+                    {
+                        "rent_price": "Для типа «Только аренда» необходимо указать цену аренды."
+                    }
+                )
             self.price = None  # Очищаем лишнюю цену покупки
 
-        elif self.deal_type == 'both':
+        elif self.deal_type == "both":
             errors = {}
             if not self.price:
-                errors['price'] = 'Укажите цену покупки.'
+                errors["price"] = "Укажите цену покупки."
             if not self.rent_price:
-                errors['rent_price'] = 'Укажите цену аренды.'
+                errors["rent_price"] = "Укажите цену аренды."
             if errors:
                 raise ValidationError(errors)
 
 
 # 3. ТАБЛИЦА ЗАПАСОВ НА СКЛАДЕ
 class Stock(models.Model):
-    product = models.OneToOneField(Product, on_delete=models.CASCADE, verbose_name="Товар")
-    quantity = models.PositiveIntegerField(default=0, verbose_name="Количество на складе")
+    product = models.OneToOneField(
+        Product, on_delete=models.CASCADE, verbose_name="Товар"
+    )
+    quantity = models.PositiveIntegerField(
+        default=0, verbose_name="Количество на складе"
+    )
 
     class Meta:
         verbose_name = "Запас на складе"
@@ -148,7 +184,9 @@ class CartItem(models.Model):
     ]
     client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Клиент")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Товар")
-    deal_type = models.CharField(max_length=10, choices=DEAL_CHOICES, default="sale", verbose_name="Тип сделки")
+    deal_type = models.CharField(
+        max_length=10, choices=DEAL_CHOICES, default="sale", verbose_name="Тип сделки"
+    )
     quantity = models.PositiveIntegerField(default=1, verbose_name="Количество")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
 
@@ -161,16 +199,25 @@ class CartItem(models.Model):
 # 5. ТАБЛИЦА ЗАКАЗОВ
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('new', 'Новый'),
-        ('paid', 'Оплачен'),
-        ('delivered', 'Доставлен'),
-        ('canceled', 'Отменен'),
+        ("new", "Новый"),
+        ("paid", "Оплачен"),
+        ("delivered", "Доставлен"),
+        ("canceled", "Отменен"),
     ]
 
     client = models.ForeignKey(Client, on_delete=models.PROTECT, verbose_name="Клиент")
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Итоговая сумма")
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='new', verbose_name="Статус заказа")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания заказа")
+    total_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, verbose_name="Итоговая сумма"
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default="new",
+        verbose_name="Статус заказа",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Дата создания заказа"
+    )
 
     class Meta:
         verbose_name = "Заказ"
@@ -182,10 +229,16 @@ class Order(models.Model):
 
 class Favorite(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites", verbose_name="Пользователь"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+        verbose_name="Пользователь",
     )
     product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name="favorited_by", verbose_name="Товар"
+        Product,
+        on_delete=models.CASCADE,
+        related_name="favorited_by",
+        verbose_name="Товар",
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата добавления")
 

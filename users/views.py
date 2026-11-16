@@ -25,7 +25,9 @@ class ProfileUpdateForm(forms.ModelForm):
         model = User
         fields = ("first_name", "last_name", "patronymic", "email", "phone", "address")
         widgets = {
-            "address": forms.Textarea(attrs={"rows": 3, "placeholder": "Город, улица, дом, квартира"}),
+            "address": forms.Textarea(
+                attrs={"rows": 3, "placeholder": "Город, улица, дом, квартира"}
+            ),
         }
 
 
@@ -56,7 +58,9 @@ def register(request):
 def profile(request):
     user = request.user
     client = Client.objects.filter(email=user.email).first()
-    orders = Order.objects.filter(client=client).order_by("-created_at") if client else []
+    orders = (
+        Order.objects.filter(client=client).order_by("-created_at") if client else []
+    )
 
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, instance=user)

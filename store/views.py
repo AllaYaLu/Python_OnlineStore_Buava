@@ -37,10 +37,14 @@ def home(request):
         )
         .order_by("-is_available", "-id")[:8]
     )
-    
+
     categories = Category.objects.all()
     favorite_ids = (
-        list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
+        list(
+            Favorite.objects.filter(user=request.user).values_list(
+                "product_id", flat=True
+            )
+        )
         if request.user.is_authenticated
         else []
     )
@@ -77,7 +81,9 @@ def product_list(request):
 
     search_query = request.GET.get("q", "").strip()
     if search_query:
-        products = products.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query))
+        products = products.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
 
     sort_by = request.GET.get("sort", "")
     if sort_by == "price_asc":
@@ -88,7 +94,11 @@ def product_list(request):
         products = products.order_by("-is_available", "-id")
 
     favorite_ids = (
-        list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
+        list(
+            Favorite.objects.filter(user=request.user).values_list(
+                "product_id", flat=True
+            )
+        )
         if request.user.is_authenticated
         else []
     )
@@ -97,7 +107,9 @@ def product_list(request):
     context = {
         "products": products,
         "categories": categories,
-        "selected_category": int(category_id) if category_id and category_id.isdigit() else None,
+        "selected_category": int(category_id)
+        if category_id and category_id.isdigit()
+        else None,
         "selected_deal": deal_type,
         "search_query": search_query,
         "sort_by": sort_by,
@@ -108,7 +120,9 @@ def product_list(request):
 
 
 def product_detail(request, pk):
-    product = get_object_or_404(Product.objects.select_related("category", "badge", "stock"), pk=pk)
+    product = get_object_or_404(
+        Product.objects.select_related("category", "badge", "stock"), pk=pk
+    )
     is_favorite = (
         Favorite.objects.filter(user=request.user, product=product).exists()
         if request.user.is_authenticated
@@ -133,7 +147,9 @@ def toggle_favorite(request, product_id):
 
 @login_required
 def favorite_list(request):
-    favorites = Favorite.objects.filter(user=request.user).select_related("product", "product__badge", "product__stock")
+    favorites = Favorite.objects.filter(user=request.user).select_related(
+        "product", "product__badge", "product__stock"
+    )
     products = [f.product for f in favorites]
     return render(request, "store/favorites.html", {"products": products})
 
@@ -152,7 +168,9 @@ def toggle_compare(request, product_id):
 
 def compare_list(request):
     compare_ids = request.session.get("compare_ids", [])
-    products = Product.objects.filter(id__in=compare_ids).select_related("category", "badge", "stock")
+    products = Product.objects.filter(id__in=compare_ids).select_related(
+        "category", "badge", "stock"
+    )
     return render(request, "store/compare.html", {"products": products})
 
 
@@ -165,7 +183,9 @@ def add_to_cart(request, product_id):
 
     deal_type = request.POST.get("deal_type", "sale")
     client = _get_or_create_client(request.user)
-    cart_item, created = CartItem.objects.get_or_create(client=client, product=product, deal_type=deal_type)
+    cart_item, created = CartItem.objects.get_or_create(
+        client=client, product=product, deal_type=deal_type
+    )
     if not created:
         cart_item.quantity += 1
         cart_item.save()
@@ -176,7 +196,7 @@ def add_to_cart(request, product_id):
 
     # Формируем удобное сообщение с быстрыми переходами
     msg = mark_safe(
-        f'Игра <strong>«{product.title}»</strong> добавлена в корзину ({action_label})! '
+        f"Игра <strong>«{product.title}»</strong> добавлена в корзину ({action_label})! "
         f'<a href="{cart_url}" class="toast-link">Перейти в корзину</a> или '
         f'<a href="{catalog_url}" class="toast-link">выбрать ещё в каталоге</a>.'
     )
@@ -190,13 +210,21 @@ def add_to_cart(request, product_id):
 @login_required
 def cart_detail(request):
     client = _get_or_create_client(request.user)
-    items = CartItem.objects.filter(client=client).select_related("product", "product__stock").order_by("id")
+    items = (
+        CartItem.objects.filter(client=client)
+        .select_related("product", "product__stock")
+        .order_by("id")
+    )
     total_price = 0
     for item in items:
-        unit_price = item.product.rent_price if item.deal_type == "rent" else item.product.price
+        unit_price = (
+            item.product.rent_price if item.deal_type == "rent" else item.product.price
+        )
         item.subtotal = (unit_price or 0) * item.quantity
         total_price += item.subtotal
-    return render(request, "store/cart_detail.html", {"items": items, "total_price": total_price})
+    return render(
+        request, "store/cart_detail.html", {"items": items, "total_price": total_price}
+    )
 
 
 @login_required
@@ -231,16 +259,28 @@ def remove_cart_item(request, item_id):
 @login_required
 def create_order(request):
     client = _get_or_create_client(request.user)
-    items = CartItem.objects.filter(client=client).select_related("product", "product__stock")
+    items = CartItem.objects.filter(client=client).select_related(
+        "product", "product__stock"
+    )
     if items.exists():
         total_price = sum(
-            ((item.product.rent_price if item.deal_type == "rent" else item.product.price) or 0) * item.quantity
+            (
+                (
+                    item.product.rent_price
+                    if item.deal_type == "rent"
+                    else item.product.price
+                )
+                or 0
+            )
+            * item.quantity
             for item in items
         )
         order = Order.objects.create(client=client, total_amount=total_price)
         for item in items:
             if hasattr(item.product, "stock"):
-                item.product.stock.quantity = max(0, item.product.stock.quantity - item.quantity)
+                item.product.stock.quantity = max(
+                    0, item.product.stock.quantity - item.quantity
+                )
                 item.product.stock.save()
         items.delete()
         return render(request, "store/order_success.html", {"order": order})

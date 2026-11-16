@@ -16,7 +16,9 @@ def header_counters(request):
         client = Client.objects.filter(email=request.user.email).first()
         if client:
             # Считаем общее количество штук в корзине (если поле пустое, вернет 0)
-            total_qty = CartItem.objects.filter(client=client).aggregate(total=Sum("quantity"))["total"]
+            total_qty = CartItem.objects.filter(client=client).aggregate(
+                total=Sum("quantity")
+            )["total"]
             cart_count = total_qty or 0
 
     return {

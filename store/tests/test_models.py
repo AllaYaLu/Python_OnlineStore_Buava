@@ -1,9 +1,11 @@
 from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
-from store.models import Badge, Category, Client, Favorite, Order, Product, Stock
+
+from store.models import Badge, Category, Favorite, Product, Stock
 
 User = get_user_model()
 
@@ -11,7 +13,9 @@ User = get_user_model()
 class StoreModelsTestCase(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Стратегии")
-        self.badge = Badge.objects.create(name="Хит", color="#E05A2B", text_color="#FFFFFF")
+        self.badge = Badge.objects.create(
+            name="Хит", color="#E05A2B", text_color="#FFFFFF"
+        )
         self.product_sale = Product.objects.create(
             title="Сумерки Империи",
             price=Decimal("8500.00"),
@@ -53,7 +57,9 @@ class StoreModelsTestCase(TestCase):
 
     def test_favorite_uniqueness(self):
         """Проверка, что пользователь не может добавить один товар в избранное дважды."""
-        user = User.objects.create_user(username="gamer", email="gamer@example.com", password="password123")
+        user = User.objects.create_user(
+            username="gamer", email="gamer@example.com", password="password123"
+        )
         Favorite.objects.create(user=user, product=self.product_sale)
 
         with self.assertRaises(IntegrityError):

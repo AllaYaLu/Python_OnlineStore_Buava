@@ -1,7 +1,9 @@
 from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+
 from store.models import CartItem, Category, Client, Order, Product, Stock
 
 User = get_user_model()
@@ -37,7 +39,9 @@ class StoreViewsTestCase(TestCase):
         self.assertEqual(catalog_resp.status_code, 200)
         self.assertContains(catalog_resp, "Увлекательный настольный детектив.")
 
-        detail_resp = self.client.get(reverse("product_detail", kwargs={"pk": self.game.pk}))
+        detail_resp = self.client.get(
+            reverse("product_detail", kwargs={"pk": self.game.pk})
+        )
         self.assertEqual(detail_resp.status_code, 200)
 
     def test_add_to_cart_sale_and_rent_separately(self):
@@ -45,9 +49,15 @@ class StoreViewsTestCase(TestCase):
         self.client.login(username="buyer1", password="strongpassword123")
 
         # Добавляем покупку
-        self.client.post(reverse("add_to_cart", kwargs={"product_id": self.game.id}), {"deal_type": "sale"})
+        self.client.post(
+            reverse("add_to_cart", kwargs={"product_id": self.game.id}),
+            {"deal_type": "sale"},
+        )
         # Добавляем аренду
-        self.client.post(reverse("add_to_cart", kwargs={"product_id": self.game.id}), {"deal_type": "rent"})
+        self.client.post(
+            reverse("add_to_cart", kwargs={"product_id": self.game.id}),
+            {"deal_type": "rent"},
+        )
 
         client_profile = Client.objects.get(email="buyer1@example.com")
         items = CartItem.objects.filter(client=client_profile)
@@ -61,7 +71,10 @@ class StoreViewsTestCase(TestCase):
     def test_create_order_clears_cart_and_reduces_stock(self):
         """Проверка оформления заказа: создается Order, корзина очищается, остаток уменьшается."""
         self.client.login(username="buyer1", password="strongpassword123")
-        self.client.post(reverse("add_to_cart", kwargs={"product_id": self.game.id}), {"deal_type": "sale"})
+        self.client.post(
+            reverse("add_to_cart", kwargs={"product_id": self.game.id}),
+            {"deal_type": "sale"},
+        )
 
         order_resp = self.client.post(reverse("create_order"))
         self.assertEqual(order_resp.status_code, 200)
