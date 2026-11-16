@@ -1,5 +1,4 @@
 services:
-  # 1. Сервис базы данных PostgreSQL
   db:
     image: postgres:16-alpine
     container_name: online_store_db
@@ -14,7 +13,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Сервис веб-приложения Django
   web:
     build: .
     container_name: online_store_web
@@ -22,7 +20,6 @@ services:
     env_file:
       - .env
     environment:
-      # Переопределяем адрес БД, чтобы Django стучался в контейнер 'db', а не в localhost
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     command: >
         sh -c "python manage.py migrate &&
@@ -37,7 +34,6 @@ services:
       db:
         condition: service_healthy
 
-# Постоянные тома для хранения данных на хосте
 volumes:
   postgres_data:
   media_volume:

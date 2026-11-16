@@ -117,6 +117,7 @@ class Product(models.Model):
         return hasattr(self, "stock") and self.stock.quantity > 0
 
     def save(self, *args, **kwargs):
+        """Автоматически конвертирует изображения .jfif в .jpg для корректного отображения в браузерах."""
         if self.image:
             file_root, ext = os.path.splitext(self.image.name)
             if ext.lower() == ".jfif":
@@ -138,7 +139,7 @@ class Product(models.Model):
                         "price": "Для типа «Только продажа» необходимо указать цену покупки."
                     }
                 )
-            self.rent_price = None  # Очищаем лишнюю цену аренды, если случайно ввели
+            self.rent_price = None  # Обнуляем неиспользуемую цену, чтобы в базе не оставалось устаревших значений при смене типа сделки
 
         elif self.deal_type == "rent":
             if not self.rent_price:

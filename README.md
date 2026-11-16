@@ -34,14 +34,14 @@
 
 2. **Создайте файл `.env` на основе `.env.example`:**
    ```env
-   SECRET_KEY=your-secret-key
+   SECRET_KEY=your-secret-key-here
    DEBUG=True
    ALLOWED_HOSTS=localhost,127.0.0.1
-   DB_NAME=online_store
-   DB_USER=user
-   DB_PASSWORD=your_password
-   DB_HOST=db
-   DB_PORT=5432
+   DATABASE_URL=postgres://user:password@db:5432/online_store
+
+   POSTGRES_DB=online_store
+   POSTGRES_USER=user
+   POSTGRES_PASSWORD=password
    ```
 
 3. **Соберите и запустите контейнеры в фоновом режиме:**

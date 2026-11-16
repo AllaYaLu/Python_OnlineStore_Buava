@@ -60,7 +60,7 @@ def home(request):
 
 
 def product_list(request):
-    """Страница Каталог: карточки С описанием, фильтрами по категориям, типу сделки и поиском."""
+    """Отображает каталог товаров с фильтрацией по категориям, типу сделки и поиском."""
     products = Product.objects.select_related("category", "badge", "stock").annotate(
         is_available=Case(
             When(stock__quantity__gt=0, then=Value(True)),
@@ -85,6 +85,7 @@ def product_list(request):
             Q(title__icontains=search_query) | Q(description__icontains=search_query)
         )
 
+    # Вычисляем флаг наличия на уровне БД, чтобы товары «Нет на складе» всегда уходили в конец списка
     sort_by = request.GET.get("sort", "")
     if sort_by == "price_asc":
         products = products.order_by("-is_available", "price", "rent_price")
@@ -160,7 +161,9 @@ def toggle_compare(request, product_id):
     if product_id in compare_ids:
         compare_ids.remove(product_id)
     else:
-        if len(compare_ids) < 4:  # Ограничим сравнение до 4 игр
+        if (
+            len(compare_ids) < 4
+        ):  # Ограничиваем список сравнения 4 играми, чтобы таблица сохраняла читаемость на десктопе
             compare_ids.append(product_id)
     request.session["compare_ids"] = compare_ids
     return redirect(request.META.get("HTTP_REFERER", "product_list"))
