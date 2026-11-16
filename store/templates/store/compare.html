@@ -64,6 +64,34 @@
                             <td>{{ product.description|default:"Описание отсутствует"|truncatewords:25 }}</td>
                         {% endfor %}
                     </tr>
+                    <tr>
+                        <td><strong>Действие</strong></td>
+                        {% for product in products %}
+                            <td>
+                                <div class="compare-actions">
+                                    {% if product.in_stock %}
+                                        {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="deal_type" value="sale">
+                                                <button type="submit" class="btn btn--buy">Купить</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="deal_type" value="rent">
+                                                <button type="submit" class="btn btn--rent">Арендовать</button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <button type="button" class="btn btn--disabled" disabled>Нет на складе</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        {% endfor %}
+                    </tr>
                 </tbody>
             </table>
         </div>

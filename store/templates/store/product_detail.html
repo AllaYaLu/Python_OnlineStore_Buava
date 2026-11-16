@@ -1,19 +1,4 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ product.title }} — Интернет-магазин</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }
-        .product-container { display: flex; gap: 40px; }
-        .product-info { max-width: 500px; }
-        .price { font-size: 24px; color: green; font-weight: bold; margin: 20px 0; }
-    </style>
-</head>
-<body>
-
-    {% extends 'store/base.html' %}
+{% extends 'store/base.html' %}
 
     {% block title %}{{ product.title }} — Buava Store{% endblock %}
     
@@ -113,5 +98,3 @@
     {% endblock %}
     
 
-</body>
-</html>

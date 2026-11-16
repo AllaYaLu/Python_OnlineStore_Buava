@@ -1,6 +1,9 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import BooleanField, Case, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.views.decorators.cache import never_cache
 
 from .models import CartItem, Category, Client, Favorite, Order, Product
@@ -23,7 +26,18 @@ def _get_or_create_client(user):
 
 def home(request):
     """Главная страница: компактные карточки БЕЗ длинного описания."""
-    products = Product.objects.select_related("category", "badge", "stock").order_by("-id")[:8]
+    products = (
+        Product.objects.select_related("category", "badge", "stock")
+        .annotate(
+            is_available=Case(
+                When(stock__quantity__gt=0, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
+        )
+        .order_by("-is_available", "-id")[:8]
+    )
+    
     categories = Category.objects.all()
     favorite_ids = (
         list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
@@ -43,7 +57,14 @@ def home(request):
 
 def product_list(request):
     """Страница Каталог: карточки С описанием, фильтрами по категориям, типу сделки и поиском."""
-    products = Product.objects.select_related("category", "badge", "stock").all()
+    products = Product.objects.select_related("category", "badge", "stock").annotate(
+        is_available=Case(
+            When(stock__quantity__gt=0, then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField(),
+        )
+    )
+
     categories = Category.objects.all()
 
     category_id = request.GET.get("category")
@@ -60,11 +81,11 @@ def product_list(request):
 
     sort_by = request.GET.get("sort", "")
     if sort_by == "price_asc":
-        products = products.order_by("price", "rent_price")
+        products = products.order_by("-is_available", "price", "rent_price")
     elif sort_by == "price_desc":
-        products = products.order_by("-price", "-rent_price")
+        products = products.order_by("-is_available", "-price", "-rent_price")
     else:
-        products = products.order_by("-id")
+        products = products.order_by("-is_available", "-id")
 
     favorite_ids = (
         list(Favorite.objects.filter(user=request.user).values_list("product_id", flat=True))
@@ -139,6 +160,7 @@ def compare_list(request):
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if not product.in_stock:
+        messages.error(request, f"К сожалению, «{product.title}» сейчас нет на складе.")
         return redirect(request.META.get("HTTP_REFERER", "product_list"))
 
     deal_type = request.POST.get("deal_type", "sale")
@@ -147,7 +169,21 @@ def add_to_cart(request, product_id):
     if not created:
         cart_item.quantity += 1
         cart_item.save()
-    return redirect("cart_detail")
+
+    action_label = "в аренду" if deal_type == "rent" else "для покупки"
+    cart_url = reverse("cart_detail")
+    catalog_url = reverse("product_list")
+
+    # Формируем удобное сообщение с быстрыми переходами
+    msg = mark_safe(
+        f'Игра <strong>«{product.title}»</strong> добавлена в корзину ({action_label})! '
+        f'<a href="{cart_url}" class="toast-link">Перейти в корзину</a> или '
+        f'<a href="{catalog_url}" class="toast-link">выбрать ещё в каталоге</a>.'
+    )
+    messages.success(request, msg)
+
+    # Возвращаем пользователя ровно на ту страницу, где он нажал кнопку
+    return redirect(request.META.get("HTTP_REFERER", "product_list"))
 
 
 @never_cache
