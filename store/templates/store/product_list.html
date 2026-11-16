@@ -1,0 +1,48 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Каталог игр — Buava Store{% endblock %}
+
+{% block content %}
+<div class="catalog-layout">
+    <!-- Боковая панель фильтров -->
+    <aside class="catalog-sidebar">
+        <h3>Категории</h3>
+        <ul class="filter-list">
+            <li><a href="{% url 'product_list' %}" class="{% if not selected_category %}active{% endif %}">Все категории</a></li>
+            {% for cat in categories %}
+                <li>
+                    <a href="?category={{ cat.id }}" class="{% if selected_category == cat.id %}active{% endif %}">
+                        {{ cat.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <h3>Формат</h3>
+        <ul class="filter-list">
+            <li><a href="?deal=sale" class="{% if selected_deal == 'sale' %}active{% endif %}">Можно купить</a></li>
+            <li><a href="?deal=rent" class="{% if selected_deal == 'rent' %}active{% endif %}">Можно арендовать</a></li>
+        </ul>
+    </aside>
+
+    <!-- Сетка товаров с описанием -->
+    <section class="catalog-main">
+        <div class="catalog-toolbar">
+            <h1>Каталог товаров</h1>
+            <div class="sort-links">
+                <span>Сортировка:</span>
+                <a href="?sort=price_asc">Сначала дешевле</a>
+                <a href="?sort=price_desc">Сначала дороже</a>
+            </div>
+        </div>
+
+        <div class="product-grid">
+            {% for product in products %}
+                {% include 'store/includes/product_card.html' with show_description=True %}
+            {% empty %}
+                <p>По вашему запросу ничего не найдено. <a href="{% url 'product_list' %}">Сбросить фильтры</a></p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

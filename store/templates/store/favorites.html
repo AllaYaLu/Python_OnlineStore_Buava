@@ -1,0 +1,16 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Избранное — Buava Store{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h1>Избранные игры</h1>
+    <div class="product-grid">
+        {% for product in products %}
+            {% include 'store/includes/product_card.html' with show_description=False %}
+        {% empty %}
+            <p>В избранном пока пусто. Нажимайте на сердечко ♥ на карточках, чтобы сохранить понравившиеся игры!</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

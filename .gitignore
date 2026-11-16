@@ -1,0 +1,27 @@
+# Python и кэш
+__pycache__/
+*.py[cod]
+*$py.class
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Секреты и окружение
+.env
+.env.*
+!.env.example
+
+# База данных и дампы
+db.sqlite3
+*.sql
+
+# Статика и загружаемые медиафайлы
+/staticfiles/
+/media/
+
+# IDE и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

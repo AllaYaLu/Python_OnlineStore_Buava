@@ -1,0 +1,50 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Личный кабинет — Buava Store{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+    <!-- Левая колонка: Профиль и адрес доставки -->
+    <section class="profile-card">
+        <h2>Мои данные</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-success">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" class="profile-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn-primary">Сохранить изменения</button>
+        </form>
+    </section>
+
+    <!-- Правая колонка: История заказов -->
+    <section class="orders-card">
+        <h2>История заказов</h2>
+
+        {% if orders %}
+            <div class="orders-list">
+                {% for order in orders %}
+                    <div class="order-item">
+                        <div class="order-header">
+                            <strong>Заказ №{{ order.id }}</strong>
+                            <span class="order-status status-{{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="order-meta">
+                            <span>Дата: {{ order.created_at|date:"d.m.Y H:i" }}</span>
+                            <strong>Сумма: {{ order.total_amount }} ₽</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">У вас пока нет оформленных заказов. Загляните в <a href="{% url 'product_list' %}">каталог игр</a>!</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

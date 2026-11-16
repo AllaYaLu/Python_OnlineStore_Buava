@@ -1,0 +1,100 @@
+{% extends 'store/base.html' %}
+
+    {% block title %}{{ product.title }} — Buava Store{% endblock %}
+    
+    {% block content %}
+    <div class="product-detail-page">
+        <a href="{% url 'product_list' %}" class="back-link">&larr; Вернуться в каталог</a>
+    
+        <div class="product-detail">
+            <!-- Левая колонка: Фото и бейдж -->
+            <div class="product-detail__media">
+                {% if product.badge %}
+                    <span class="product-badge" style="background-color: {{ product.badge.color }}; color: {{ product.badge.text_color }};">
+                        {{ product.badge.name }}
+                    </span>
+                {% endif %}
+    
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.title }}" class="product-detail__image">
+                {% else %}
+                    <div class="product-detail__no-image">Нет фото</div>
+                {% endif %}
+            </div>
+    
+            <!-- Правая колонка: Информация, цены и действия -->
+            <div class="product-detail__info">
+                {% if product.category %}
+                    <span class="product-detail__category">{{ product.category.name }}</span>
+                {% endif %}
+    
+                <h1 class="product-detail__title">{{ product.title }}</h1>
+    
+                <!-- Статус наличия на складе -->
+                <div class="product-detail__stock">
+                    {% if product.in_stock %}
+                        <span class="stock-badge stock-badge--in">В наличии ({{ product.stock.quantity }} шт.)</span>
+                    {% else %}
+                        <span class="stock-badge stock-badge--out">Нет на складе</span>
+                    {% endif %}
+                </div>
+    
+                <!-- Блок цен (Покупка и/или Аренда) -->
+                <div class="product-detail__prices">
+                    {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                        <div class="price-box">
+                            <span class="price-box__label">Покупка:</span>
+                            <strong class="price-box__value">{{ product.price }} ₽</strong>
+                        </div>
+                    {% endif %}
+    
+                    {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                        <div class="price-box price-box--rent">
+                            <span class="price-box__label">Аренда:</span>
+                            <strong class="price-box__value">{{ product.rent_price }} ₽ / сут</strong>
+                        </div>
+                    {% endif %}
+                </div>
+    
+                <!-- Кнопки добавления в корзину, избранное и сравнение -->
+                <div class="product-detail__actions">
+                    {% if product.in_stock %}
+                        {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="deal_type" value="sale">
+                                <button type="submit" class="btn btn--buy">Купить</button>
+                            </form>
+                        {% endif %}
+    
+                        {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="deal_type" value="rent">
+                                <button type="submit" class="btn btn--rent">Арендовать</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <button type="button" class="btn btn--disabled" disabled>Нет в наличии</button>
+                    {% endif %}
+    
+                    <a href="{% url 'toggle_favorite' product.id %}" class="btn btn--outline {% if is_favorite %}is-active{% endif %}">
+                        {% if is_favorite %}♥ В избранном{% else %}♡ В избранное{% endif %}
+                    </a>
+    
+                    <a href="{% url 'toggle_compare' product.id %}" class="btn btn--outline {% if is_compared %}is-active{% endif %}">
+                        {% if is_compared %}✓ В сравнении{% else %}⇄ Сравнить{% endif %}
+                    </a>
+                </div>
+    
+                <!-- Полное описание игры -->
+                <div class="product-detail__description">
+                    <h3>Описание</h3>
+                    <p>{{ product.description|default:"Описание для данного товара пока не добавлено." }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    
+

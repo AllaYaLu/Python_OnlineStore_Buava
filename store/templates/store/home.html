@@ -1,0 +1,25 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Buava Store — Магазин и аренда настольных игр{% endblock %}
+
+{% block content %}
+<section class="hero-banner">
+    <h1>Настольные игры для ярких вечеров</h1>
+    <p>Покупайте в коллекцию или берите в аренду на выходные.</p>
+    <a href="{% url 'product_list' %}" class="btn btn--primary">Перейти в полный каталог</a>
+</section>
+
+<section class="section">
+    <div class="section__header">
+        <h2>Новинки и популярное</h2>
+        <a href="{% url 'product_list' %}">Смотреть все &rarr;</a>
+    </div>
+    <div class="product-grid">
+        {% for product in products %}
+            {% include 'store/includes/product_card.html' with show_description=False %}
+        {% empty %}
+            <p>Товаров пока нет.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

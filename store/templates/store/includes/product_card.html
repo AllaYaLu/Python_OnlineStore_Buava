@@ -1,0 +1,79 @@
+<article class="product-card {% if not product.in_stock %}product-card--out-of-stock{% endif %}">
+    <!-- Бейдж из админки -->
+    {% if product.badge %}
+        <span class="product-badge" style="background-color: {{ product.badge.color }}; color: {{ product.badge.text_color }};">
+            {{ product.badge.name }}
+        </span>
+    {% endif %}
+
+    <!-- Кнопки Избранное и Сравнение -->
+    <div class="product-card__actions-top">
+        <a href="{% url 'toggle_favorite' product.id %}" class="icon-btn {% if product.id in favorite_ids %}is-active{% endif %}" title="В избранное">
+            ♥
+        </a>
+        <a href="{% url 'toggle_compare' product.id %}" class="icon-btn {% if product.id in compare_ids %}is-active{% endif %}" title="Сравнить">
+            ⇄
+        </a>
+    </div>
+
+    <!-- Фото товара -->
+    <a href="{% url 'product_detail' product.id %}" class="product-card__image-wrap">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.title }}" class="product-card__image">
+        {% else %}
+            <div class="product-card__no-image">Нет фото</div>
+        {% endif %}
+        {% if not product.in_stock %}
+            <span class="stock-overlay">Нет в наличии</span>
+        {% endif %}
+    </a>
+
+    <!-- Информация -->
+    <div class="product-card__body">
+        {% if product.category %}
+            <span class="product-card__category">{{ product.category.name }}</span>
+        {% endif %}
+
+        <h3 class="product-card__title">
+            <a href="{% url 'product_detail' product.id %}">{{ product.title }}</a>
+        </h3>
+
+        <!-- Описание выводится только если передан параметр show_description=True (в Каталоге) -->
+        {% if show_description and product.description %}
+            <p class="product-card__desc">{{ product.description|truncatewords:18 }}</p>
+        {% endif %}
+
+        <!-- Цены -->
+        <div class="product-card__prices">
+            {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                <div class="price-tag">Покупка: <strong>{{ product.price }} ₽</strong></div>
+            {% endif %}
+            {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                <div class="price-tag price-tag--rent">Аренда: <strong>{{ product.rent_price }} ₽/сут</strong></div>
+            {% endif %}
+        </div>
+
+        <!-- Кнопки действия или заглушка отсутствия на складе -->
+        <div class="product-card__buttons">
+            {% if product.in_stock %}
+                {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                    <form action="{% url 'add_to_cart' product.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="deal_type" value="sale">
+                        <button type="submit" class="btn btn--buy">Купить</button>
+                    </form>
+                {% endif %}
+
+                {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                    <form action="{% url 'add_to_cart' product.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="deal_type" value="rent">
+                        <button type="submit" class="btn btn--rent">Арендовать</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <button type="button" class="btn btn--disabled" disabled>Нет на складе</button>
+            {% endif %}
+        </div>
+    </div>
+</article>

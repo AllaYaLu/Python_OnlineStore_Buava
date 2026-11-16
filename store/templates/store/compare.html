@@ -1,0 +1,102 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Сравнение игр — Buava Store{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h1>Сравнение игр ({{ products|length }} из 4)</h1>
+
+    {% if products %}
+        <div class="compare-table-wrap">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>Параметр</th>
+                        {% for product in products %}
+                            <th>
+                                <a href="{% url 'product_detail' product.id %}">{{ product.title }}</a>
+                                <br>
+                                <a href="{% url 'toggle_compare' product.id %}" class="remove-link">Убрать</a>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Фото</strong></td>
+                        {% for product in products %}
+                            <td>
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.title }}" style="max-height: 120px;">
+                                {% else %}
+                                    Нет фото
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Категория</strong></td>
+                        {% for product in products %}
+                            <td>{{ product.category.name|default:"—" }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Цена покупки</strong></td>
+                        {% for product in products %}
+                            <td>{% if product.price %}{{ product.price }} ₽{% else %}Не продается{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Цена аренды</strong></td>
+                        {% for product in products %}
+                            <td>{% if product.rent_price %}{{ product.rent_price }} ₽/сут{% else %}Не сдается{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Наличие</strong></td>
+                        {% for product in products %}
+                            <td>{% if product.in_stock %}В наличии{% else %}Нет на складе{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Описание</strong></td>
+                        {% for product in products %}
+                            <td>{{ product.description|default:"Описание отсутствует"|truncatewords:25 }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td><strong>Действие</strong></td>
+                        {% for product in products %}
+                            <td>
+                                <div class="compare-actions">
+                                    {% if product.in_stock %}
+                                        {% if product.deal_type == 'sale' or product.deal_type == 'both' %}
+                                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="deal_type" value="sale">
+                                                <button type="submit" class="btn btn--buy">Купить</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if product.deal_type == 'rent' or product.deal_type == 'both' %}
+                                            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="deal_type" value="rent">
+                                                <button type="submit" class="btn btn--rent">Арендовать</button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <button type="button" class="btn btn--disabled" disabled>Нет на складе</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Список сравнения пуст. Добавьте до 4 игр из <a href="{% url 'product_list' %}">каталога</a> с помощью значка ⇄.</p>
+    {% endif %}
+</section>
+{% endblock %}
